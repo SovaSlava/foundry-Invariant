@@ -1,10 +1,14 @@
 
 pragma solidity 0.8.26;
-contract Puzzle {
+
+import { Ownable2Step, Ownable } from "lib/openzeppelin-contracts/contracts/access/Ownable2Step.sol";
+
+contract Puzzle is Ownable2Step {
 
     uint256 public seqno;
+    uint256 public transfersCount;
     bool public completed;
-    bool public submitted;
+    bool public ownerAllowed;
     uint32 public steps;
     uint32 public m;
     uint32 public n;
@@ -14,11 +18,10 @@ contract Puzzle {
     uint32 public r;
     uint32 public s;
     uint32 public t;
-    address public admin;
     uint256 public withdrawForAdmin;
 
     mapping(address => uint256) public internalBalance;
-    constructor (uint256 seqno_, address _admin) {
+    constructor (uint256 seqno_, address _admin) Ownable(_admin) {
         seqno = seqno_;
         m = 19;
         n = 12;
@@ -28,11 +31,11 @@ contract Puzzle {
         r = 4;
         s = 23;
         t = 12;
-        admin = _admin;
+        
     }
  
     function alpha () external {
-        decreaseBalance(msg.sender, 1 ether);
+        decreaseBalance(1 ether);
         m += 15;
         n -= 5;
         o = o << 1;
@@ -40,7 +43,7 @@ contract Puzzle {
     }
  
     function beta() external {
-        decreaseBalance(msg.sender, 2 ether);
+        decreaseBalance(2 ether);
         p += 10;
         q = q << 1;
         r -= 7;
@@ -48,7 +51,7 @@ contract Puzzle {
     }
  
     function gamma () external {
-        decreaseBalance(msg.sender, 3 ether);
+        decreaseBalance(3 ether);
         s = s >> 1;
         t += 20;
         m = m << 1;
@@ -56,7 +59,7 @@ contract Puzzle {
     }
  
     function delta() external {
-        decreaseBalance(msg.sender, 4 ether);
+        decreaseBalance(4 ether);
         n = n << 1;
         o += 12;
         p = p >> 1;
@@ -64,7 +67,7 @@ contract Puzzle {
     }
  
     function epsilon() external {
-        decreaseBalance(msg.sender, 5 ether);
+        decreaseBalance(5 ether);
         q -= 8;
         r = r << 1;
         s += 5;
@@ -72,7 +75,7 @@ contract Puzzle {
     }
  
     function zeta() external {
-        decreaseBalance(msg.sender, 6 ether);
+        decreaseBalance(6 ether);
         t = t << 1;
         m -= 9;
         n += 14;
@@ -80,16 +83,22 @@ contract Puzzle {
     }
  
     function theta() external {
-        decreaseBalance(msg.sender, 7 ether);
+        decreaseBalance(7 ether);
         o -= 6;
         p += 7;
         q = q << 1;
     }
  
+    function transfer(address to, uint256 amount) external {
+        internalBalance[msg.sender] -= amount;
+        internalBalance[to] += amount;
+        transfersCount++;
+    }
     function verify() external {
         if (
             (((((((m + n) + o) + p) + q) + r) + s) + t) == 777 &&
-            steps <= 15
+            steps <= 15 &&
+            ownerAllowed == true 
         ) {
             completed = true;
         }
@@ -108,14 +117,17 @@ contract Puzzle {
         payable(msg.sender).transfer(amount);
     }
 
-    function decreaseBalance(address user, uint256 amount) internal {
-        internalBalance[user] -= amount;
+    function decreaseBalance(uint256 amount) internal {
+        internalBalance[msg.sender] -= amount;
         withdrawForAdmin += amount;
     }
 
-    function withdrawByAdmin() external {
-        require(msg.sender == admin, "OnlyAdmin");
-        payable(admin).transfer(withdrawForAdmin);
+    function emergencyWithdraw() external onlyOwner {
+        payable(owner()).transfer(withdrawForAdmin);
+    }
+
+    function allow() external onlyOwner {
+        ownerAllowed = true;
     }
 
 }
