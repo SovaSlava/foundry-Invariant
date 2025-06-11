@@ -1,28 +1,25 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity 0.8.26;
 
-import { CommonBase } from "lib/forge-std/src/Base.sol";
-import { StdCheats } from "lib/forge-std/src/StdCheats.sol";
-import { StdUtils } from "lib/forge-std/src/StdUtils.sol";
-import { Puzzle } from "../../src/Puzzle.sol";
-import { LibAddressSet } from "./LibAddressSet.sol";
-contract HandlerUser is CommonBase, StdCheats, StdUtils {
+import {CommonBase} from "lib/forge-std/src/Base.sol";
+import {StdCheats} from "lib/forge-std/src/StdCheats.sol";
+import {StdUtils} from "lib/forge-std/src/StdUtils.sol";
+import {Puzzle} from "../../src/Puzzle.sol";
+import {LibAddressSet} from "./LibAddressSet.sol";
 
-   
-    
+contract HandlerUser is CommonBase, StdCheats, StdUtils {
     Puzzle public puzzle;
     uint256 public deposited;
     address internal currentActor;
-    
-   
+
     using LibAddressSet for LibAddressSet.AddressSet;
+
     LibAddressSet.AddressSet internal _actors;
 
     constructor(address _puzzle) {
         puzzle = Puzzle(_puzzle);
     }
 
-    
     modifier createActor() {
         currentActor = msg.sender;
 
@@ -32,12 +29,11 @@ contract HandlerUser is CommonBase, StdCheats, StdUtils {
 
     modifier useExistActor(uint256 actorIndexSeed) {
         currentActor = _actors.rand(actorIndexSeed);
-        if(currentActor == address(0xaabbcc)) {
+        if (currentActor == address(0xaabbcc)) {
             makeDeposit(123);
         }
         _;
     }
-
 
     function makeDeposit(uint256 amount) public createActor {
         amount = bound(amount, 20 ether, 100 ether > address(this).balance ? address(this).balance : 100 ether);
@@ -51,52 +47,51 @@ contract HandlerUser is CommonBase, StdCheats, StdUtils {
         amount = bound(amount, 0, puzzle.internalBalance(address(this)));
         deposited -= amount;
         vm.startPrank(currentActor);
-            puzzle.doWithdraw(amount);
-            fund(address(this), amount);
+        puzzle.doWithdraw(amount);
+        fund(address(this), amount);
         vm.stopPrank();
-
     }
 
-    function beta(uint256 actorSeed)  public  useExistActor(actorSeed){
+    function beta(uint256 actorSeed) public useExistActor(actorSeed) {
         vm.prank(currentActor);
-            puzzle.beta();
+        puzzle.beta();
         vm.stopPrank();
     }
 
     function gamme(uint256 actorSeed) public useExistActor(actorSeed) {
         vm.prank(currentActor);
-            puzzle.gamma();
+        puzzle.gamma();
         vm.stopPrank();
     }
 
     function delta(uint256 actorSeed) public useExistActor(actorSeed) {
         vm.prank(currentActor);
-            puzzle.delta();
+        puzzle.delta();
         vm.stopPrank();
     }
 
     function epsilon(uint256 actorSeed) public useExistActor(actorSeed) {
         vm.startPrank(currentActor);
-            puzzle.epsilon();
+        puzzle.epsilon();
         vm.stopPrank();
     }
 
     function zeta(uint256 actorSeed) public useExistActor(actorSeed) {
         vm.startPrank(currentActor);
-            puzzle.zeta();
+        puzzle.zeta();
         vm.stopPrank();
     }
 
     function theta(uint256 actorSeed) public useExistActor(actorSeed) {
         vm.startPrank(currentActor);
-            puzzle.theta();
+        puzzle.theta();
         vm.stopPrank();
     }
 
     function verify() public {
-        if(puzzle.sum() == 777 && puzzle.steps() <= 15) {
+        if (puzzle.sum() == 777 && puzzle.steps() <= 15) {
             vm.startPrank(currentActor);
-                puzzle.verify();
+            puzzle.verify();
             vm.stopPrank();
         }
     }
@@ -104,6 +99,6 @@ contract HandlerUser is CommonBase, StdCheats, StdUtils {
     function fund(address user, uint256 amount) internal {
         payable(user).transfer(amount);
     }
+
     receive() external payable {}
-    
 }
